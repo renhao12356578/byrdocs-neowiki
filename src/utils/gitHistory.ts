@@ -28,6 +28,9 @@ export function getRecentlyChangedExams(): RecentExam[] {
 function parseGitLog(output: string): RecentExam[] {
   const blocks = output.split("---COMMIT---\n").filter(Boolean);
   const examMap = new Map<string, RecentExam>();
+  let validTimestampCount = 0;
+  let totalFilePathCount = 0;
+  let matchedFilePathCount = 0;
 
   for (const block of blocks) {
     const lines = block.split("\n").filter(Boolean);
@@ -35,17 +38,38 @@ function parseGitLog(output: string): RecentExam[] {
 
     const timestamp = parseInt(lines[0], 10);
     if (isNaN(timestamp)) continue;
+    validTimestampCount++;
 
     const message = lines[1];
+    const filePaths = lines.slice(2);
+    totalFilePathCount += filePaths.length;
 
-    for (const filePath of lines.slice(2)) {
+    for (const filePath of filePaths) {
       const match = filePath.match(/^exams\/([^/]+)\//);
       if (!match) continue;
+      matchedFilePathCount++;
       const examId = match[1];
       if (!examMap.has(examId)) {
         examMap.set(examId, { id: examId, timestamp, message });
       }
     }
+  }
+
+  if (blocks.length > 0) {
+    const sample = blocks[0].split("\n");
+    console.warn("[gitHistory] blocks:", blocks.length);
+    console.warn("[gitHistory] first block lines:", {
+      count: sample.length,
+      l0: sample[0]?.slice(0, 80),
+      l1: sample[1]?.slice(0, 80),
+      l2: sample[2]?.slice(0, 80),
+      l3: sample[3]?.slice(0, 80),
+    });
+    console.warn("[gitHistory] stats:", {
+      validTimestampCount,
+      totalFilePathCount,
+      matchedFilePathCount,
+    });
   }
 
   return [...examMap.values()].sort((a, b) => b.timestamp - a.timestamp);
