@@ -10,7 +10,7 @@ export interface RecentExam {
 export function getRecentlyChangedExams(): RecentExam[] {
   try {
     const output = execSync(
-      `git log --format='---COMMIT---%n%at%n%s' --name-only --max-count=30 -- 'exams/'`,
+      `git -c core.quotePath=false log --format='---COMMIT---%n%at%n%s' --name-only --max-count=30 -- 'exams/'`,
       { encoding: "utf-8" },
     );
     console.warn("[gitHistory] raw output length:", output.length);
